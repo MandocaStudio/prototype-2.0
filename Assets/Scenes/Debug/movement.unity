@@ -473,9 +473,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 177223be365fcfb41a895363a921584e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerInput: {fileID: 0}
   speed: 6
   traversing: 0
+  grounded: 0
 --- !u!114 &80319476
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -843,9 +843,9 @@ GameObject:
   - component: {fileID: 1858787166}
   - component: {fileID: 1858787165}
   - component: {fileID: 1858787169}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube
-  m_TagString: Untagged
+  m_TagString: Magnetic Structure
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -955,6 +955,7 @@ MonoBehaviour:
   change: 0
   positive: {fileID: 2100000, guid: 4d397215812b65b40a345d791b1f6c77, type: 2}
   negative: {fileID: 2100000, guid: d54a202342741204280ad71705052945, type: 2}
+  forceDirectionVar: 0
 --- !u!1 &2019603755
 GameObject:
   m_ObjectHideFlags: 0

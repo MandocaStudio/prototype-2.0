@@ -6,6 +6,7 @@ TagManager:
   tags:
   - traversable floor
   - Traversable Floor
+  - Magnetic Structure
   layers:
   - Default
   - TransparentFX
@@ -13,7 +14,7 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - floor
   - 
   - 
   - 

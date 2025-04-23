@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class polarityChanger : MonoBehaviour
 {
-    [SerializeField] Polarity polarity;
+    public Polarity polarity;
 
     movement PlayerMovement;
 

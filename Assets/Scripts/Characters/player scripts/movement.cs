@@ -3,10 +3,16 @@ using UnityEngine.InputSystem;
 
 public class movement : MonoBehaviour
 {
+    [System.NonSerialized]
     public PlayerInput playerInput;
-    Rigidbody rbPlayer;
 
-    Animator playerAnimator;
+    [System.NonSerialized]
+    public Rigidbody rbPlayer;
+
+    [System.NonSerialized]
+    public Animator playerAnimator;
+
+    polarityChanger polarityChangerScript;
 
     private float moveX;
 
@@ -14,12 +20,17 @@ public class movement : MonoBehaviour
 
     [SerializeField] bool traversing = false;
 
+    [SerializeField] bool grounded;
 
+    int magneticLayer;
     void Start()
     {
         playerInput = GetComponent<PlayerInput>();
         rbPlayer = GetComponent<Rigidbody>();
         playerAnimator = GetComponent<Animator>();
+        polarityChangerScript = GetComponent<polarityChanger>();
+
+        magneticLayer = LayerMask.NameToLayer("floor");
     }
 
     // Update is called once per frame
@@ -38,6 +49,69 @@ public class movement : MonoBehaviour
         Vector3 move = new Vector3(moveX, 0f, 0f) * speed;
         rbPlayer.linearVelocity = new Vector3(move.x, rbPlayer.linearVelocity.y, rbPlayer.linearVelocity.z);
     }
+
+    void OnCollisionEnter(Collision collision)
+    {
+
+        if (collision.gameObject.layer == magneticLayer)
+        {
+            grounded = true;
+        }
+    }
+
+    void OnCollisionExit(Collision collision)
+    {
+
+        if (collision.gameObject.layer == magneticLayer)
+        {
+            grounded = false;
+        }
+    }
+
+    void OnCollisionStay(Collision collision)
+    {
+        if (collision.collider.CompareTag("Magnetic Structure") && grounded)
+        {
+            structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
+
+            if (structurePolarity != null)
+            {
+                if (polarityChangerScript.polarity == structurePolarity.polarity)
+                {
+                    switch (structurePolarity.forceDirectionVar)
+                    {
+                        case structurePolarityChanger.forceDirection.right:
+
+                            break;
+
+                        case structurePolarityChanger.forceDirection.left:
+
+                            break;
+
+                        case structurePolarityChanger.forceDirection.up:
+
+                            break;
+
+                        case structurePolarityChanger.forceDirection.down:
+
+                            break;
+                    }
+
+                }
+            }
+
+        }
+
+    }
+
+
+
+
+
+
+
+
+
 
     void OnTriggerStay(Collider other)
     {
