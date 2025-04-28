@@ -1,5 +1,8 @@
+using UnityEditor.Timeline.Actions;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Cysharp.Threading.Tasks;
+using System.Collections;
 
 public class movement : MonoBehaviour
 {
@@ -22,7 +25,14 @@ public class movement : MonoBehaviour
 
     [SerializeField] bool grounded;
 
-    int magneticLayer;
+    [SerializeField] bool isClimbing;
+
+    int floorLayer;
+
+    [SerializeField] bool canRepulse;
+
+    public bool canMove;
+
     void Start()
     {
         playerInput = GetComponent<PlayerInput>();
@@ -30,7 +40,15 @@ public class movement : MonoBehaviour
         playerAnimator = GetComponent<Animator>();
         polarityChangerScript = GetComponent<polarityChanger>();
 
-        magneticLayer = LayerMask.NameToLayer("floor");
+        floorLayer = LayerMask.NameToLayer("floor");
+        canRepulse = false;
+
+        isClimbing = true;
+
+        canMove = true;
+
+        //Debug.DrawRay(transform.position, Vector3.right * 2f, Color.red, 1f);
+
     }
 
     // Update is called once per frame
@@ -40,31 +58,116 @@ public class movement : MonoBehaviour
         {
             traversing = true;
         }
+
+        if (playerInput.actions["polarityChanger"].WasPressedThisFrame())
+        {
+            canRepulse = true;
+        }
     }
+
+    [SerializeField] float maxSpeed = 6f;
 
     void FixedUpdate()
     {
-        moveX = playerInput.actions["movement"].ReadValue<Vector2>().x;
+        if (canMove)
+        {
+            moveX = playerInput.actions["movement"].ReadValue<Vector2>().x;
 
-        Vector3 move = new Vector3(moveX, 0f, 0f) * speed;
-        rbPlayer.linearVelocity = new Vector3(move.x, rbPlayer.linearVelocity.y, rbPlayer.linearVelocity.z);
+            if (Mathf.Abs(moveX) > 0.01f)
+            {
+                // Aplica fuerza inmediata en el eje X
+                rbPlayer.AddForce(new Vector3(moveX, 0, 0) * speed, ForceMode.VelocityChange);
+
+                // Limita la velocidad máxima en X
+                float clampedX = Mathf.Clamp(rbPlayer.linearVelocity.x, -maxSpeed, maxSpeed);
+                rbPlayer.linearVelocity = new Vector3(clampedX, rbPlayer.linearVelocity.y, rbPlayer.linearVelocity.z);
+            }
+            else if (Mathf.Abs(moveX) < 0.01f && grounded)
+
+            {
+                // Detiene completamente el movimiento en X si no hay input
+                rbPlayer.linearVelocity = new Vector3(0f, rbPlayer.linearVelocity.y, rbPlayer.linearVelocity.z);
+            }
+        }
+        else
+        {
+            moveX = 0;
+
+        }
     }
+
 
     void OnCollisionEnter(Collision collision)
     {
 
-        if (collision.gameObject.layer == magneticLayer)
+        if (collision.gameObject.layer == floorLayer)
         {
             grounded = true;
+        }
+
+        if (collision.collider.CompareTag("Magnetic Structure") && grounded)
+        {
+            structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
+
+            if (structurePolarity != null)
+            {
+                if (polarityChangerScript.polarity == structurePolarity.polarity)
+                {
+                    magneticForce(structurePolarity, 5f);
+                }
+            }
+        }
+
+        if (collision.collider.CompareTag("Magnetic Structure Wall") && !grounded)
+        {
+
+            isClimbing = true;
+
+            structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
+
+            if (structurePolarity != null)
+            {
+                if (polarityChangerScript.polarity == structurePolarity.polarity)
+                {
+
+                    magneticForce(structurePolarity, 5f);
+                }
+
+                if (polarityChangerScript.polarity != structurePolarity.polarity)
+                {
+                    rbPlayer.constraints |= RigidbodyConstraints.FreezePositionY;
+
+
+                }
+            }
         }
     }
 
     void OnCollisionExit(Collision collision)
     {
 
-        if (collision.gameObject.layer == magneticLayer)
+        if (collision.gameObject.layer == floorLayer)
         {
             grounded = false;
+        }
+
+        if (collision.collider.CompareTag("Magnetic Structure Wall") && !grounded)
+        {
+            isClimbing = false;
+
+            structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
+
+            if (structurePolarity != null)
+            {
+
+                if (polarityChangerScript.polarity != structurePolarity.polarity)
+                {
+                    rbPlayer.constraints &= ~RigidbodyConstraints.FreezePositionY;
+
+                }
+            }
+
+
         }
     }
 
@@ -76,31 +179,86 @@ public class movement : MonoBehaviour
 
             if (structurePolarity != null)
             {
-                if (polarityChangerScript.polarity == structurePolarity.polarity)
+
+                if (polarityChangerScript.polarity == structurePolarity.polarity && canRepulse == true)
                 {
-                    switch (structurePolarity.forceDirectionVar)
-                    {
-                        case structurePolarityChanger.forceDirection.right:
+                    canRepulse = false;
 
-                            break;
-
-                        case structurePolarityChanger.forceDirection.left:
-
-                            break;
-
-                        case structurePolarityChanger.forceDirection.up:
-
-                            break;
-
-                        case structurePolarityChanger.forceDirection.down:
-
-                            break;
-                    }
-
+                    magneticForce(structurePolarity, 10f);
+                }
+                else if (polarityChangerScript.polarity != structurePolarity.polarity && canRepulse == true)
+                {
+                    canRepulse = false;
                 }
             }
-
         }
+
+        if (collision.collider.CompareTag("Magnetic Structure Wall") && isClimbing)
+        {
+            structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
+
+            if (structurePolarity != null)
+            {
+
+                if (polarityChangerScript.polarity == structurePolarity.polarity && canRepulse == true)
+                {
+                    canRepulse = false;
+                    rbPlayer.constraints &= ~RigidbodyConstraints.FreezePositionY;
+
+                    magneticForce(structurePolarity, 10f);
+                }
+                else if (polarityChangerScript.polarity != structurePolarity.polarity && canRepulse == true)
+                {
+                    canRepulse = false;
+                }
+            }
+        }
+
+    }
+
+    private void magneticForce(structurePolarityChanger structurePolarity, float magneticForce)
+    {
+        switch (structurePolarity.forceDirectionVar)
+        {
+            case structurePolarityChanger.forceDirection.right:
+                Debug.Log("entra right");
+                StartCoroutine(waitSeconds(Vector3.right, magneticForce));
+
+                break;
+
+            case structurePolarityChanger.forceDirection.left:
+                Debug.Log("entra left");
+
+                StartCoroutine(waitSeconds(Vector3.left, magneticForce));
+
+
+                break;
+
+            case structurePolarityChanger.forceDirection.up:
+                rbPlayer.AddForce(Vector3.up * magneticForce, ForceMode.VelocityChange);
+
+                break;
+
+            case structurePolarityChanger.forceDirection.down:
+                rbPlayer.AddForce(Vector3.down * magneticForce, ForceMode.VelocityChange);
+
+                break;
+        }
+
+    }
+
+    private IEnumerator waitSeconds(Vector3 direction, float force)
+    {
+        canMove = false;
+
+        rbPlayer.linearVelocity = Vector3.zero; // resetea velocidad previa
+
+        rbPlayer.AddForce(direction * force, ForceMode.VelocityChange);
+
+
+        yield return new WaitForSeconds(0.5f);
+
+        canMove = true;
 
     }
 
