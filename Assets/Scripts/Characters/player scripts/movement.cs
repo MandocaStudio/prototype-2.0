@@ -31,7 +31,15 @@ public class movement : MonoBehaviour
 
     [SerializeField] bool canRepulse;
 
+    [SerializeField] bool isRepulsing;
+
     public bool canMove;
+
+    [SerializeField] float polarityForceWeakFloor; //6.7
+    [SerializeField] float polarityForceStrongFloor; //10.3
+    [SerializeField] float polarityForceWeakWall; //6.7
+    [SerializeField] float polarityForceStrongWall; //10.3
+
 
     void Start()
     {
@@ -46,6 +54,8 @@ public class movement : MonoBehaviour
         isClimbing = true;
 
         canMove = true;
+
+        isRepulsing = false;
 
         //Debug.DrawRay(transform.position, Vector3.right * 2f, Color.red, 1f);
 
@@ -107,13 +117,18 @@ public class movement : MonoBehaviour
 
         if (collision.collider.CompareTag("Magnetic Structure") && grounded)
         {
+            isRepulsing = false;
+
             structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
 
             if (structurePolarity != null)
             {
                 if (polarityChangerScript.polarity == structurePolarity.polarity)
                 {
-                    magneticForce(structurePolarity, 5f);
+                    isRepulsing = true;
+
+                    magneticForce(structurePolarity, polarityForceWeakFloor);
+
                 }
             }
         }
@@ -130,7 +145,7 @@ public class movement : MonoBehaviour
                 if (polarityChangerScript.polarity == structurePolarity.polarity)
                 {
 
-                    magneticForce(structurePolarity, 5f);
+                    magneticForce(structurePolarity, polarityForceWeakWall);
                 }
 
                 if (polarityChangerScript.polarity != structurePolarity.polarity)
@@ -166,13 +181,29 @@ public class movement : MonoBehaviour
 
                 }
             }
+        }
 
+        if (collision.collider.CompareTag("Magnetic Structure") && grounded)
+        {
+            structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
 
+            if (structurePolarity != null)
+            {
+                if (polarityChangerScript.polarity == structurePolarity.polarity)
+                {
+                    isRepulsing = false;
+                }
+            }
         }
     }
 
     void OnCollisionStay(Collision collision)
     {
+        if (collision.gameObject.layer == floorLayer)
+        {
+            grounded = true;
+        }
+
         if (collision.collider.CompareTag("Magnetic Structure") && grounded)
         {
             structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
@@ -180,11 +211,11 @@ public class movement : MonoBehaviour
             if (structurePolarity != null)
             {
 
-                if (polarityChangerScript.polarity == structurePolarity.polarity && canRepulse == true)
+                if (polarityChangerScript.polarity == structurePolarity.polarity && canRepulse == true && !isRepulsing)
                 {
                     canRepulse = false;
 
-                    magneticForce(structurePolarity, 10f);
+                    magneticForce(structurePolarity, polarityForceStrongFloor);
                 }
                 else if (polarityChangerScript.polarity != structurePolarity.polarity && canRepulse == true)
                 {
@@ -205,7 +236,7 @@ public class movement : MonoBehaviour
                     canRepulse = false;
                     rbPlayer.constraints &= ~RigidbodyConstraints.FreezePositionY;
 
-                    magneticForce(structurePolarity, 10f);
+                    magneticForce(structurePolarity, polarityForceStrongWall);
                 }
                 else if (polarityChangerScript.polarity != structurePolarity.polarity && canRepulse == true)
                 {
