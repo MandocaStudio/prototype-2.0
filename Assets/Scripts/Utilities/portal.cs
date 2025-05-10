@@ -1,30 +1,55 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class portal : MonoBehaviour
 {
 
     [SerializeField] int keyRequiredAmount;
 
+    [SerializeField] Scene lvlScene;
 
-    void OnTriggerEnter(Collider other)
+    int nextSceneIndex;
+    PlayerInput playerInput;
+
+    bool canUsePortal;
+
+    BasicInventory inventory;
+    void Start()
     {
-        if (other.CompareTag("Player"))
+        playerInput = GetComponent<PlayerInput>();
+
+        inventory = GetComponent<BasicInventory>();
+
+        int actualSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        nextSceneIndex = actualSceneIndex + 1;
+    }
+
+    private void Update()
+    {
+        if (playerInput.actions["Interact"].WasPressedThisFrame())
         {
-            PlayerInput playerInput = other.GetComponent<PlayerInput>();
-            if (playerInput != null)
+            int keyAmount = inventory.keyAmount;
+
+            if (keyRequiredAmount == keyAmount)
             {
-                if (playerInput.actions["Interact"].WasPressedThisFrame())
-                {
-                    int keyAmount = other.GetComponent<BasicInventory>().keyAmount;
-
-                    if (keyRequiredAmount == keyAmount)
-                    {
-                        Debug.Log("hacia el otro nivel");
-                    }
-                }
+                resetScene.Instancia.ResetFunction(nextSceneIndex);
             }
+        }
+    }
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("portal"))
+        {
+            canUsePortal = true;
+        }
+    }
 
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Portal"))
+        {
+            canUsePortal = false;
         }
     }
 }

@@ -94,7 +94,7 @@ public class cronometro : MonoBehaviour
 
         else if (currentTime <= 0)
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            resetScene.Instancia.ResetFunction(SceneManager.GetActiveScene().buildIndex);
         }
     }
 }
