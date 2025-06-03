@@ -12,15 +12,7 @@ public class structurePolarityChanger : MonoBehaviour
     [SerializeField] Material positive;
     [SerializeField] Material negative;
 
-    public enum forceDirection
-    {
-        right,
-        left,
-        up,
-        down
-    }
 
-    public forceDirection forceDirectionVar;
     private void Start()
     {
         structureRenderer = GetComponent<Renderer>();

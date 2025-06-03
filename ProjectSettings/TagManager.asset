@@ -10,6 +10,9 @@ TagManager:
   - Magnetic Structure Wall
   - key
   - portal
+  - Limit Wall
+  - movablePlatform
+  - Portal
   layers:
   - Default
   - TransparentFX

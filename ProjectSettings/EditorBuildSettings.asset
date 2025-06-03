@@ -6,8 +6,20 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/Scenes/Debug/movement wall lvl 01.unity
+    guid: 899a5fa6903d89145928452e630b63dd
+  - enabled: 1
+    path: Assets/Scenes/Debug/movement wall lvl 02.unity
+    guid: dea4a5e8e0f87004dbffc3a694a62f92
+  - enabled: 1
+    path: Assets/Scenes/Debug/movement wall lvl 03.unity
+    guid: a657f3e909f0a1e4e83cec712edb2dd0
+  - enabled: 1
+    path: Assets/Scenes/Debug/movement wall lvl 04.unity
+    guid: f656c60341fcec345ad57cabbc844183
+  - enabled: 1
+    path: Assets/Scenes/Debug/movement wall lvl 05.unity
+    guid: ab4c60ed2ec0741488d9720a9c097f3a
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

@@ -3,6 +3,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Cysharp.Threading.Tasks;
 using System.Collections;
+using UnityEngine.SceneManagement;
+using Unity.VisualScripting;
 
 public class movement : MonoBehaviour
 {
@@ -20,6 +22,8 @@ public class movement : MonoBehaviour
     private float moveX;
 
     [SerializeField] float speed;
+    [SerializeField] float maxSpeed;
+
 
     [SerializeField] bool traversing = false;
 
@@ -29,17 +33,25 @@ public class movement : MonoBehaviour
 
     int floorLayer;
 
-    [SerializeField] bool canRepulse;
 
-    [SerializeField] bool isRepulsing;
 
     public bool canMove;
 
+    [Header("variables de repulsion")]
     [SerializeField] float polarityForceWeakFloor; //6.7
     [SerializeField] float polarityForceStrongFloor; //10.3
     [SerializeField] float polarityForceWeakWall; //6.7
     [SerializeField] float polarityForceStrongWall; //10.3
 
+    [SerializeField] bool canRepulse;
+
+    public bool isRepulsing;
+
+    [Header("variables de caida rapida")]
+
+    [SerializeField] float fallMultiplier;
+
+    [SerializeField] bool canUsefallMultiplier;
 
     void Start()
     {
@@ -64,6 +76,13 @@ public class movement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        //debug de fuerza de impacto eje y
+        // if (!grounded)
+        // {
+        //     float velocidadY = rbPlayer.linearVelocity.y;
+        //     Debug.Log("Velocidad en Y: " + velocidadY);
+        // }
+
         if (playerInput.actions["traversableButton"].WasPressedThisFrame() && !traversing)
         {
             traversing = true;
@@ -75,7 +94,7 @@ public class movement : MonoBehaviour
         }
     }
 
-    [SerializeField] float maxSpeed = 6f;
+
 
     void FixedUpdate()
     {
@@ -85,209 +104,268 @@ public class movement : MonoBehaviour
 
             if (Mathf.Abs(moveX) > 0.01f)
             {
-                // Aplica fuerza inmediata en el eje X
-                rbPlayer.AddForce(new Vector3(moveX, 0, 0) * speed, ForceMode.VelocityChange);
+                // Calcula velocidad deseada
+                float targetSpeed = moveX * speed;
 
-                // Limita la velocidad máxima en X
+                // Calcula la diferencia entre la velocidad actual y la deseada
+                float speedDiff = targetSpeed - rbPlayer.linearVelocity.x;
+
+                // Aplica fuerza proporcional solo para acercarse a la velocidad deseada
+                rbPlayer.AddForce(new Vector3(speedDiff, 0, 0), ForceMode.VelocityChange);
+
+                // Limita velocidad máxima sin anular el viento
                 float clampedX = Mathf.Clamp(rbPlayer.linearVelocity.x, -maxSpeed, maxSpeed);
                 rbPlayer.linearVelocity = new Vector3(clampedX, rbPlayer.linearVelocity.y, rbPlayer.linearVelocity.z);
             }
-            else if (Mathf.Abs(moveX) < 0.01f && grounded)
-
+            else if (grounded)
             {
-                // Detiene completamente el movimiento en X si no hay input
-                rbPlayer.linearVelocity = new Vector3(0f, rbPlayer.linearVelocity.y, rbPlayer.linearVelocity.z);
+                // Frenado suave al soltar input (solo en el suelo)
+                Vector3 velocity = rbPlayer.linearVelocity;
+                velocity.x = Mathf.Lerp(velocity.x, 0, 0.2f); // puedes ajustar el 0.2f para más o menos frenado
+                rbPlayer.linearVelocity = velocity;
             }
         }
-        else
-        {
-            moveX = 0;
 
+        // Aumenta la gravedad cuando cae
+        if (rbPlayer.linearVelocity.y < 0 && canUsefallMultiplier)
+        {
+            rbPlayer.linearVelocity += Vector3.up * Physics.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
         }
     }
 
 
     void OnCollisionEnter(Collision collision)
     {
-
-        if (collision.gameObject.layer == floorLayer)
+        //
+        if (collision.gameObject.layer == floorLayer && collision.GetContact(0).normal.y > 0)
         {
             grounded = true;
+            canUsefallMultiplier = true;
         }
 
-        if (collision.collider.CompareTag("Magnetic Structure") && grounded)
+
+
+
+        // repulsion general
+        if (collision.collider.CompareTag("Magnetic Structure"))
         {
-            isRepulsing = false;
+            Vector3 contactNormal = collision.GetContact(0).normal;
 
             structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
 
-            if (structurePolarity != null)
+            Debug.Log(contactNormal);
+            //repulsion en el suelo
+            if (grounded)
+            {
+                isRepulsing = false;
+
+                if (structurePolarity != null)
+                {
+                    if (polarityChangerScript.polarity == structurePolarity.polarity)
+                    {
+                        isRepulsing = true;
+
+                        magneticForce(structurePolarity, polarityForceWeakFloor, contactNormal);
+
+                    }
+                }
+            }
+
+            //repulsion en la pared
+            //modificar si habran paredes pegadas a suelos
+            else if (contactNormal.x != 0 && contactNormal.y == 0 && (grounded || !grounded))
+            {
+                Debug.Log("entra");
+                isClimbing = true;
+
+                if (structurePolarity != null)
+                {
+                    if (polarityChangerScript.polarity == structurePolarity.polarity)
+                    {
+                        magneticForce(structurePolarity, polarityForceWeakWall, contactNormal);
+
+                    }
+
+                    if (polarityChangerScript.polarity != structurePolarity.polarity)
+                    {
+
+                        rbPlayer.constraints |= RigidbodyConstraints.FreezePositionY;
+                    }
+                }
+            }
+
+            //repulsion en esquinas
+            else if (contactNormal.x != 0 && contactNormal.y != 0 && (grounded || !grounded))
             {
                 if (polarityChangerScript.polarity == structurePolarity.polarity)
                 {
-                    isRepulsing = true;
 
-                    magneticForce(structurePolarity, polarityForceWeakFloor);
-
+                    magneticForce(structurePolarity, polarityForceWeakWall, contactNormal);
                 }
             }
+
         }
 
-        if (collision.collider.CompareTag("Magnetic Structure Wall") && !grounded)
-        {
-
-            isClimbing = true;
-
-            structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
-
-            if (structurePolarity != null)
-            {
-                if (polarityChangerScript.polarity == structurePolarity.polarity)
-                {
-
-                    magneticForce(structurePolarity, polarityForceWeakWall);
-                }
-
-                if (polarityChangerScript.polarity != structurePolarity.polarity)
-                {
-                    rbPlayer.constraints |= RigidbodyConstraints.FreezePositionY;
-
-
-                }
-            }
-        }
     }
 
     void OnCollisionExit(Collision collision)
     {
-
+        // &&collision.gameObject.layer == floorLayer
         if (collision.gameObject.layer == floorLayer)
         {
             grounded = false;
+
         }
 
-        if (collision.collider.CompareTag("Magnetic Structure Wall") && !grounded)
+
+
+        if (rbPlayer.constraints.HasFlag(RigidbodyConstraints.FreezePositionY))
         {
+            canUsefallMultiplier = false;
+            rbPlayer.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionZ;
             isClimbing = false;
-
-            structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
-
-            if (structurePolarity != null)
-            {
-
-                if (polarityChangerScript.polarity != structurePolarity.polarity)
-                {
-                    rbPlayer.constraints &= ~RigidbodyConstraints.FreezePositionY;
-
-                }
-            }
         }
-
-        if (collision.collider.CompareTag("Magnetic Structure") && grounded)
+        //repulsion general
+        if (collision.collider.CompareTag("Magnetic Structure"))
         {
-            structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
-
-            if (structurePolarity != null)
+            if (collision.contactCount > 0)
             {
-                if (polarityChangerScript.polarity == structurePolarity.polarity)
+
+                Vector3 contactNormal = collision.GetContact(0).normal;
+
+                structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
+
+                //repulsion suelo
+                if (grounded)
                 {
-                    isRepulsing = false;
+                    if (structurePolarity != null)
+                    {
+                        if (polarityChangerScript.polarity == structurePolarity.polarity)
+                        {
+                            isRepulsing = true;
+
+                        }
+                    }
                 }
+
             }
         }
     }
 
     void OnCollisionStay(Collision collision)
     {
-        if (collision.gameObject.layer == floorLayer)
+
+        if (!grounded && collision.gameObject.layer == floorLayer && collision.GetContact(0).normal.y > 0 && !isRepulsing)
         {
             grounded = true;
         }
 
-        if (collision.collider.CompareTag("Magnetic Structure") && grounded)
+        if (!collision.collider.CompareTag("Magnetic Structure") && grounded && (canRepulse || isClimbing))
         {
-            structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
+            canRepulse = false;
 
-            if (structurePolarity != null)
+            isClimbing = false;
+
+        }
+        //repulsion general
+        if (collision.collider.CompareTag("Magnetic Structure"))
+        {
+            if (collision.contactCount > 0)
             {
+                Vector3 contactNormal = collision.GetContact(0).normal;
 
-                if (polarityChangerScript.polarity == structurePolarity.polarity && canRepulse == true && !isRepulsing)
+                structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
+
+                //repulsion suelo
+                if (contactNormal.x == 0 && contactNormal.y != 0 && grounded)
                 {
-                    canRepulse = false;
+                    if (structurePolarity != null)
+                    {
 
-                    magneticForce(structurePolarity, polarityForceStrongFloor);
+                        if (polarityChangerScript.polarity == structurePolarity.polarity && canRepulse == true && !isRepulsing)
+                        {
+                            isRepulsing = true;
+
+                            canRepulse = false;
+
+                            magneticForce(structurePolarity, polarityForceStrongFloor, contactNormal);
+                        }
+
+                    }
                 }
-                else if (polarityChangerScript.polarity != structurePolarity.polarity && canRepulse == true)
+
+                //repulsion pared
+                else if (contactNormal.x != 0 && contactNormal.y == 0 && isClimbing)
                 {
-                    canRepulse = false;
+                    if (structurePolarity != null)
+                    {
+
+                        if (polarityChangerScript.polarity == structurePolarity.polarity && canRepulse == true)
+                        {
+                            isRepulsing = true;
+
+                            canRepulse = false;
+
+                            //rbPlayer.constraints &= ~RigidbodyConstraints.FreezePositionY;
+
+                            magneticForce(structurePolarity, polarityForceStrongWall, contactNormal);
+
+
+                        }
+                        else if (polarityChangerScript.polarity != structurePolarity.polarity && canRepulse == true)
+                        {
+                            canRepulse = false;
+                        }
+                    }
                 }
             }
         }
-
-        if (collision.collider.CompareTag("Magnetic Structure Wall") && isClimbing)
-        {
-            structurePolarityChanger structurePolarity = collision.collider.GetComponent<structurePolarityChanger>();
-
-            if (structurePolarity != null)
-            {
-
-                if (polarityChangerScript.polarity == structurePolarity.polarity && canRepulse == true)
-                {
-                    canRepulse = false;
-                    rbPlayer.constraints &= ~RigidbodyConstraints.FreezePositionY;
-
-                    magneticForce(structurePolarity, polarityForceStrongWall);
-                }
-                else if (polarityChangerScript.polarity != structurePolarity.polarity && canRepulse == true)
-                {
-                    canRepulse = false;
-                }
-            }
-        }
-
     }
 
-    private void magneticForce(structurePolarityChanger structurePolarity, float magneticForce)
+    private void magneticForce(structurePolarityChanger structurePolarity, float magneticForce, Vector3 contactNormal)
     {
-        switch (structurePolarity.forceDirectionVar)
-        {
-            case structurePolarityChanger.forceDirection.right:
-                Debug.Log("entra right");
-                StartCoroutine(waitSeconds(Vector3.right, magneticForce));
+        Vector3 repulsionDirection = contactNormal.normalized;
 
-                break;
-
-            case structurePolarityChanger.forceDirection.left:
-                Debug.Log("entra left");
-
-                StartCoroutine(waitSeconds(Vector3.left, magneticForce));
+        Debug.Log($"Repulsión en dirección: {repulsionDirection}");
 
 
-                break;
-
-            case structurePolarityChanger.forceDirection.up:
-                rbPlayer.AddForce(Vector3.up * magneticForce, ForceMode.VelocityChange);
-
-                break;
-
-            case structurePolarityChanger.forceDirection.down:
-                rbPlayer.AddForce(Vector3.down * magneticForce, ForceMode.VelocityChange);
-
-                break;
-        }
+        StartCoroutine(waitSeconds(repulsionDirection, magneticForce));
 
     }
 
     private IEnumerator waitSeconds(Vector3 direction, float force)
     {
-        canMove = false;
+        //canMove = false;
 
         rbPlayer.linearVelocity = Vector3.zero; // resetea velocidad previa
 
-        rbPlayer.AddForce(direction * force, ForceMode.VelocityChange);
+
+        float initialForceMultiplier = 1.5f; // Multiplicador para aumentar la fuerza inicial
+
+        rbPlayer.AddForce(direction * force * initialForceMultiplier, ForceMode.VelocityChange);
 
 
-        yield return new WaitForSeconds(0.5f);
+
+
+
+
+        if (direction.x != 0 && direction.y == 0)
+        {
+            yield return new WaitForSeconds(0.2f);
+
+        }
+        else if (direction.x == 0 && direction.y != 0)
+        {
+            yield return new WaitForSeconds(0.25f);
+
+        }
+        else if (direction.x != 0 && direction.y != 0)
+        {
+
+        }
+
+        // Aquí podemos reducir la velocidad progresivamente para controlar la distancia
+        rbPlayer.linearVelocity = Vector3.Scale(rbPlayer.linearVelocity, new Vector3(0.5f, 0.5f, 0));
 
         canMove = true;
 
@@ -298,10 +376,16 @@ public class movement : MonoBehaviour
 
 
 
+    //caida fuera del mapa y reset lvl
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Limit Wall"))
+        {
+            resetScene.Instancia.ResetFunction(SceneManager.GetActiveScene().buildIndex);
+        }
+    }
 
-
-
-
+    //piso traspasable
     void OnTriggerStay(Collider other)
     {
         if (other.CompareTag("Traversable Floor"))
@@ -314,6 +398,7 @@ public class movement : MonoBehaviour
             }
         }
     }
+
 
     void OnTriggerExit(Collider other)
     {
@@ -330,5 +415,14 @@ public class movement : MonoBehaviour
             }
 
         }
+    }
+
+
+    //morir
+    public void death()
+    {
+        //animacion (si tan solo la tuviera)
+        resetScene.Instancia.ResetFunction(SceneManager.GetActiveScene().buildIndex);
+
     }
 }
