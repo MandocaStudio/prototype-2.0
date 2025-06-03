@@ -187,16 +187,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 177223be365fcfb41a895363a921584e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 2
-  maxSpeed: 4
+  speed: 5.5
+  maxSpeed: 5.5
   traversing: 0
   grounded: 0
   isClimbing: 0
   canMove: 0
   polarityForceWeakFloor: 5.5
   polarityForceStrongFloor: 10.5
-  polarityForceWeakWall: 5
-  polarityForceStrongWall: 10
+  polarityForceWeakWall: 5.5
+  polarityForceStrongWall: 10.5
   canRepulse: 0
   isRepulsing: 0
   fallMultiplier: 3
