@@ -720,6 +720,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1255554750523503771, guid: de2e44973aa4f3a49980db7ab2cd914f, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1554564860350651735, guid: de2e44973aa4f3a49980db7ab2cd914f, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -1259,6 +1263,10 @@ PrefabInstance:
     - target: {fileID: 7694242272966574895, guid: de2e44973aa4f3a49980db7ab2cd914f, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7966180365514306409, guid: de2e44973aa4f3a49980db7ab2cd914f, type: 3}
+      propertyPath: polarityForceStrongWall
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7986280749002081000, guid: de2e44973aa4f3a49980db7ab2cd914f, type: 3}
       propertyPath: m_AnchorMax.y

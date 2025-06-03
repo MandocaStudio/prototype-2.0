@@ -188,17 +188,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 2
+  maxSpeed: 4
   traversing: 0
   grounded: 0
   isClimbing: 0
+  canMove: 0
+  polarityForceWeakFloor: 5.5
+  polarityForceStrongFloor: 10.5
+  polarityForceWeakWall: 5
+  polarityForceStrongWall: 10
   canRepulse: 0
   isRepulsing: 0
-  canMove: 0
-  polarityForceWeakFloor: 6.7
-  polarityForceStrongFloor: 10.3
-  polarityForceWeakWall: 6.7
-  polarityForceStrongWall: 10.3
-  maxSpeed: 4
+  fallMultiplier: 3
+  canUsefallMultiplier: 0
 --- !u!114 &3840213175364506486
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -215,6 +217,8 @@ MonoBehaviour:
   canChancePolarity: 1
   positive: {fileID: 2100000, guid: 4d397215812b65b40a345d791b1f6c77, type: 2}
   negative: {fileID: 2100000, guid: d54a202342741204280ad71705052945, type: 2}
+  neutro: {fileID: 0}
+  neutroTime: 0
 --- !u!95 &7032796233735439624
 Animator:
   serializedVersion: 7
@@ -1052,8 +1056,31 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3725272170984041927, guid: 2656511a151f4da46a7bbb6e67fa68fc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1137154149183435190}
   m_SourcePrefab: {fileID: 100100000, guid: 2656511a151f4da46a7bbb6e67fa68fc, type: 3}
+--- !u!1 &1255554750523503771 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3725272170984041927, guid: 2656511a151f4da46a7bbb6e67fa68fc, type: 3}
+  m_PrefabInstance: {fileID: 2512572266045708636}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1137154149183435190
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1255554750523503771}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8589e8de1817384abe738dd05142214, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  keyboardIcons: {fileID: 11400000, guid: 5dc06a09d0ab57c4ebff36c2e0942c99, type: 2}
+  xboxIcons: {fileID: 11400000, guid: a9361babfc53f894dab12a53e8b2809b, type: 2}
+  playstationIcons: {fileID: 11400000, guid: a9361babfc53f894dab12a53e8b2809b, type: 2}
 --- !u!224 &5692111652691934966 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7791229873119782826, guid: 2656511a151f4da46a7bbb6e67fa68fc, type: 3}
